@@ -28,11 +28,13 @@
 
 	// for x11 forwarding
 	"runArgs": [
-		"--ipc=host",
-		//"--gpus", "all",
+		"--ipc=host"
 	],
 	"containerEnv": {
-		"DISPLAY": "${localEnv:DISPLAY}"
+		"DISPLAY": "${localEnv:DISPLAY}",
+		// to use ${localEnv:UID}, you need to add "export UID" in ~/.bashrc
+		// https://github.com/microsoft/vscode-remote-release/issues/6834#issuecomment-1194479134
+		"PULSE_SERVER": "unix:/run/user/${localEnv:UID}/pulse/native"
 	},
 	"mounts": [
 		{
@@ -44,6 +46,29 @@
 			"source": "${localEnv:HOME}/.Xauthority",
 			"target": "/home/lyonn/.Xauthority",
 			"type": "bind"
+		},
+		// for audio
+		{
+			"source": "/etc/alsa",
+			"target": "/etc/alsa",
+			"type": "bind"
+		},
+		{
+			"source": "/usr/share/alsa",
+			"target": "/usr/share/alsa",
+			"type": "bind"
+		},
+		{
+			"source": "${localEnv:HOME}/.config/pulse",
+			"target": "/.config/pulse",
+			"type": "bind"
+		},
+		{
+			"source": "/run/user/${localEnv:UID}/pulse/native",
+			"target": "/run/user/${localEnv:UID}/pulse/native",
+			"type": "bind"
 		}
-	]
+	],
+
+	"containerUser": "${localEnv:UID}"
 }

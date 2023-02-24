@@ -2,17 +2,21 @@ FROM ubuntu
 
 WORKDIR /workspaces/
 
+# dotnet-sdk-7.0 for building with dotnet
+# libgl1-mesa-glx for opengl and display passthrough
+# libpulse0 libasound2 libasound2-plugins for audio passthrough
+
 RUN wget https://packages.microsoft.com/config/ubuntu/22.10/packages-microsoft-prod.deb -O packages-microsoft-prod.deb \
     && sudo dpkg -i packages-microsoft-prod.deb \
     && sudo apt-get update \
     && sudo apt-get install -y \
         luarocks \
         libgtk-3-dev \
-        libgl1-mesa-glx \
-        love \
         dotnet-sdk-7.0 \
+        libgl1-mesa-glx \
+        libpulse0 libasound2 libasound2-plugins \
     && rm packages-microsoft-prod.deb \
-    && rm -rf /var/lib/apt/lists/*
+    && sudo rm -rf /var/lib/apt/lists/*
 
 ENV LOVEURL='https://github.com/love2d/love/releases/download/11.3/love-11.3-linux-x86_64.tar.gz'
 ENV LOVETAR='love.tar.gz'
@@ -63,14 +67,11 @@ ENV MONOKICKURL='https://github.com/flibitijibibo/MonoKickstart.git'
 RUN git clone --depth 1 $MONOKICKURL \
     && mv MonoKickstart/precompiled/kick.bin.x86_64 MonoKickstart/precompiled/Olympus.Sharp.bin.x86_64 \
     && rm -f MonoKickstart/precompiled/kick.bin.x86_64.debug \
-    && cp -r MonoKickstart/precompiled/ love/sharp/
+    && cp -r MonoKickstart/precompiled/ love/sharp/ \
+    && rm -rf MonoKickstart
 
     #&& echo "${env:BUILD_BUILDNUMBER}-azure-${env:BUILD_BUILDID}-$(($env:BUILD_SOURCEVERSION).Substring(0, 5))" | Set-Content src/version.txt
-RUN cp olympus.sh love/$LOVEBINARYDIRECTORY/olympus.sh \
-    && chmod a+rx love/$LOVEBINARYDIRECTORY/olympus.sh \
-    && rm love/$LOVEBINARYDIRECTORY/lib/x86_64-linux-gnu/libz.so.1 \
-    && rm love/$LOVEBINARYDIRECTORY/usr/lib/x86_64-linux-gnu/libfreetype.so.6 \
-    && cd love \
-    && mkdir love/$BUILD_ARTIFACTSTAGINGDIRECTORY/main \
-    && zip --symlinks -r $BUILD_ARTIFACTSTAGINGDIRECTORY/main/dist.zip * \
-    && cd ..
+RUN cp olympus.sh love/olympus.sh \
+    && chmod a+rx love/olympus.sh \
+    && rm love/lib/x86_64-linux-gnu/libz.so.1 \
+    && rm love/usr/lib/x86_64-linux-gnu/libfreetype.so.6
