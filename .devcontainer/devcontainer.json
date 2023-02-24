@@ -27,6 +27,10 @@
 	},
 
 	// for x11 forwarding
+	"runArgs": [
+		"--ipc=host",
+		//"--gpus", "all",
+	],
 	"containerEnv": {
 		"DISPLAY": "${localEnv:DISPLAY}"
 	},
