@@ -1,31 +1,48 @@
+FROM cvisionai/wget AS download
+
+ENV MICROSOFT_PROD_URL='https://packages.microsoft.com/config/ubuntu/22.10/packages-microsoft-prod.deb'
+ENV LOVE_URL='https://github.com/love2d/love/releases/download/11.3/love-11.3-linux-x86_64.tar.gz'
+ENV MONOKICK_URL='https://github.com/flibitijibibo/MonoKickstart/archive/refs/heads/master.tar.gz'
+
+RUN wget --output-document=packages-microsoft-prod.deb $MICROSOFT_PROD_URL \
+    && wget --output-document=love.tar.gz $LOVE_URL \
+    && mkdir love \
+    && tar --extract --verbose --file=love.tar.gz -C love \
+    && rm --force love.tar.gz \
+    && wget --output-document=MonoKickstart.tar.gz $MONOKICK_URL \
+    && mkdir MonoKickstart \
+    && tar --extract --verbose --file=MonoKickstart.tar.gz -C MonoKickstart \
+    && rm --force MonoKickstart.tar.gz
+
 FROM ubuntu
 
 WORKDIR /workspaces/
+
+COPY --from=download packages-microsoft-prod.deb .
 
 # dotnet-sdk-7.0 for building with dotnet
 # libgl1-mesa-glx for opengl and display passthrough
 # libpulse0 libasound2 libasound2-plugins for audio passthrough
 
-RUN wget https://packages.microsoft.com/config/ubuntu/22.10/packages-microsoft-prod.deb -O packages-microsoft-prod.deb \
-    && sudo dpkg -i packages-microsoft-prod.deb \
-    && sudo apt-get update \
-    && sudo apt-get install -y \
+RUN apt-get update \
+    && apt-get install -y \
         luarocks \
         libgtk-3-dev \
-        dotnet-sdk-7.0 \
         libgl1-mesa-glx \
         libpulse0 libasound2 libasound2-plugins \
+        ca-certificates \
+    && dpkg -i packages-microsoft-prod.deb \
+    && apt-get update \
+    && apt-get install -y \
+        dotnet-sdk-7.0 \
     && rm packages-microsoft-prod.deb \
-    && sudo rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/*
 
-ENV LOVEURL='https://github.com/love2d/love/releases/download/11.3/love-11.3-linux-x86_64.tar.gz'
-ENV LOVETAR='love.tar.gz'
+COPY . .
 
-RUN wget $LOVEURL -O $LOVETAR \
-    && mkdir love \
-    && tar xvf $LOVETAR -C love \
-    && rm -f $LOVETAR \
-    && mv love/dest/* love/ \
+COPY --from=download ./love .
+
+RUN mv love/dest/* love/ \
     && rmdir love/dest
 
 ENV LUAROCKSPREARGS=
@@ -60,12 +77,13 @@ RUN dotnet restore sharp/*.csproj \
         love/sharp \
     && rm -rf sharp/bin/
 
-RUN zip -9 -r love/olympus.love src/
+RUN cd src \
+    && zip -9 -r love/olympus.love . \
+    && cd ..
 
-ENV MONOKICKURL='https://github.com/flibitijibibo/MonoKickstart.git'
+COPY --from=download ./MonoKickstart .
 
-RUN git clone --depth 1 $MONOKICKURL \
-    && mv MonoKickstart/precompiled/kick.bin.x86_64 MonoKickstart/precompiled/Olympus.Sharp.bin.x86_64 \
+RUN mv MonoKickstart/precompiled/kick.bin.x86_64 MonoKickstart/precompiled/Olympus.Sharp.bin.x86_64 \
     && rm -f MonoKickstart/precompiled/kick.bin.x86_64.debug \
     && cp -r MonoKickstart/precompiled/ love/sharp/ \
     && rm -rf MonoKickstart
@@ -75,3 +93,5 @@ RUN cp olympus.sh love/olympus.sh \
     && chmod a+rx love/olympus.sh \
     && rm love/lib/x86_64-linux-gnu/libz.so.1 \
     && rm love/usr/lib/x86_64-linux-gnu/libfreetype.so.6
+
+USER $AUDIO_USER

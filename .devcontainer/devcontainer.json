@@ -34,7 +34,8 @@
 		"DISPLAY": "${localEnv:DISPLAY}",
 		// to use ${localEnv:UID}, you need to add "export UID" in ~/.bashrc
 		// https://github.com/microsoft/vscode-remote-release/issues/6834#issuecomment-1194479134
-		"PULSE_SERVER": "unix:/run/user/${localEnv:UID}/pulse/native"
+		"PULSE_SERVER": "unix:/run/user/${localEnv:UID}/pulse/native",
+		"AUDIO_USER": "${localEnv:UID}"
 	},
 	"mounts": [
 		{
@@ -68,7 +69,5 @@
 			"target": "/run/user/${localEnv:UID}/pulse/native",
 			"type": "bind"
 		}
-	],
-
-	"containerUser": "${localEnv:UID}"
+	]
 }
